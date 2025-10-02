@@ -30,6 +30,7 @@
         {
             btnCapture = new Button();
             chkAutoOcr = new CheckBox();
+            chkDelay = new CheckBox();
             SuspendLayout();
             //
             // btnCapture
@@ -54,11 +55,22 @@
             chkAutoOcr.Text = "自動でOCR実行";
             chkAutoOcr.UseVisualStyleBackColor = true;
             //
+            // chkDelay
+            //
+            chkDelay.AutoSize = true;
+            chkDelay.Location = new Point(12, 95);
+            chkDelay.Name = "chkDelay";
+            chkDelay.Size = new Size(120, 19);
+            chkDelay.TabIndex = 2;
+            chkDelay.Text = "5秒遅延";
+            chkDelay.UseVisualStyleBackColor = true;
+            //
             // Form1
             //
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(180, 100);
+            ClientSize = new Size(180, 125);
+            Controls.Add(chkDelay);
             Controls.Add(chkAutoOcr);
             Controls.Add(btnCapture);
             FormBorderStyle = FormBorderStyle.FixedSingle;
@@ -73,6 +85,7 @@
 
         private Button btnCapture;
         private CheckBox chkAutoOcr;
+        private CheckBox chkDelay;
 
         #endregion
     }

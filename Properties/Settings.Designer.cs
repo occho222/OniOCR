@@ -34,5 +34,17 @@ namespace WinFormsApp1.Properties {
                 this["AutoOcr"] = value;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool DelayCapture {
+            get {
+                return ((bool)(this["DelayCapture"]));
+            }
+            set {
+                this["DelayCapture"] = value;
+            }
+        }
     }
 }

@@ -11,11 +11,13 @@ namespace WinFormsApp1
         private void LoadSettings()
         {
             chkAutoOcr.Checked = Properties.Settings.Default.AutoOcr;
+            chkDelay.Checked = Properties.Settings.Default.DelayCapture;
         }
 
         private void SaveSettings()
         {
             Properties.Settings.Default.AutoOcr = chkAutoOcr.Checked;
+            Properties.Settings.Default.DelayCapture = chkDelay.Checked;
             Properties.Settings.Default.Save();
         }
 
@@ -28,7 +30,16 @@ namespace WinFormsApp1
         private void btnCapture_Click(object sender, EventArgs e)
         {
             this.Hide();
-            Thread.Sleep(200); // フォームが消えるのを待つ
+
+            // 遅延が有効な場合は5秒待つ
+            if (chkDelay.Checked)
+            {
+                Thread.Sleep(5000);
+            }
+            else
+            {
+                Thread.Sleep(200); // フォームが消えるのを待つ
+            }
 
             using (var captureForm = new CaptureForm())
             {
