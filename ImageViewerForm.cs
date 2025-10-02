@@ -14,12 +14,20 @@ namespace WinFormsApp1
         private ToolStripMenuItem topmostMenuItem;
         private ToolStripMenuItem closeMenuItem;
         private Bitmap capturedImage;
+        private Bitmap drawingImage;
         private bool autoOcr;
+        private bool isDrawing = false;
+        private Point lastPoint;
+        private Pen drawingPen;
 
         public ImageViewerForm(Bitmap image, bool autoOcr = true)
         {
             capturedImage = image;
+            drawingImage = new Bitmap(image);
             this.autoOcr = autoOcr;
+            drawingPen = new Pen(Color.Red, 3);
+            drawingPen.StartCap = System.Drawing.Drawing2D.LineCap.Round;
+            drawingPen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
             InitializeComponents();
         }
 
@@ -28,10 +36,15 @@ namespace WinFormsApp1
             // PictureBox設定
             pictureBox = new PictureBox
             {
-                Image = capturedImage,
+                Image = drawingImage,
                 SizeMode = PictureBoxSizeMode.AutoSize,
                 Dock = DockStyle.Fill
             };
+
+            // 描画イベント設定
+            pictureBox.MouseDown += PictureBox_MouseDown;
+            pictureBox.MouseMove += PictureBox_MouseMove;
+            pictureBox.MouseUp += PictureBox_MouseUp;
 
             // コンテキストメニュー設定
             contextMenu = new ContextMenuStrip();
@@ -95,7 +108,7 @@ namespace WinFormsApp1
         {
             try
             {
-                Clipboard.SetImage(capturedImage);
+                Clipboard.SetImage(drawingImage);
                 MessageBox.Show("クリップボードにコピーしました。", "完了",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
@@ -132,7 +145,7 @@ namespace WinFormsApp1
                                 break;
                         }
 
-                        capturedImage.Save(saveDialog.FileName, format);
+                        drawingImage.Save(saveDialog.FileName, format);
                         MessageBox.Show("保存しました。", "完了",
                             MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
@@ -312,11 +325,41 @@ namespace WinFormsApp1
             }
         }
 
+        private void PictureBox_MouseDown(object? sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                isDrawing = true;
+                lastPoint = e.Location;
+            }
+        }
+
+        private void PictureBox_MouseMove(object? sender, MouseEventArgs e)
+        {
+            if (isDrawing)
+            {
+                using (Graphics g = Graphics.FromImage(drawingImage))
+                {
+                    g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                    g.DrawLine(drawingPen, lastPoint, e.Location);
+                }
+                lastPoint = e.Location;
+                pictureBox.Invalidate();
+            }
+        }
+
+        private void PictureBox_MouseUp(object? sender, MouseEventArgs e)
+        {
+            isDrawing = false;
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
                 capturedImage?.Dispose();
+                drawingImage?.Dispose();
+                drawingPen?.Dispose();
                 pictureBox?.Dispose();
                 contextMenu?.Dispose();
             }
