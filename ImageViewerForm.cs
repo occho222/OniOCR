@@ -14,10 +14,12 @@ namespace WinFormsApp1
         private ToolStripMenuItem topmostMenuItem;
         private ToolStripMenuItem closeMenuItem;
         private Bitmap capturedImage;
+        private bool autoOcr;
 
-        public ImageViewerForm(Bitmap image)
+        public ImageViewerForm(Bitmap image, bool autoOcr = true)
         {
             capturedImage = image;
+            this.autoOcr = autoOcr;
             InitializeComponents();
         }
 
@@ -76,6 +78,12 @@ namespace WinFormsApp1
             // キーボードショートカット
             this.KeyPreview = true;
             this.KeyDown += ImageViewerForm_KeyDown;
+
+            // 自動OCR
+            if (autoOcr)
+            {
+                this.Shown += async (s, e) => await PerformOcrAsync();
+            }
         }
 
         private void TopmostMenuItem_CheckedChanged(object? sender, EventArgs e)
@@ -139,6 +147,11 @@ namespace WinFormsApp1
 
         private async void OcrMenuItem_Click(object? sender, EventArgs e)
         {
+            await PerformOcrAsync(showResult: true);
+        }
+
+        private async Task PerformOcrAsync(bool showResult = false)
+        {
             try
             {
                 this.Cursor = Cursors.WaitCursor;
@@ -165,9 +178,12 @@ namespace WinFormsApp1
                     return;
                 }
 
+                // 画像を前処理してOCR精度を向上
+                using var processedImage = PreprocessImageForOcr(capturedImage);
+
                 // BitmapをSoftwareBitmapに変換
                 using var stream = new MemoryStream();
-                capturedImage.Save(stream, ImageFormat.Bmp);
+                processedImage.Save(stream, ImageFormat.Bmp);
                 stream.Position = 0;
 
                 var decoder = await BitmapDecoder.CreateAsync(stream.AsRandomAccessStream());
@@ -176,9 +192,20 @@ namespace WinFormsApp1
                 // OCR実行
                 var result = await engine.RecognizeAsync(softwareBitmap);
 
-                // 結果を表示
-                var ocrResultForm = new OcrResultForm(result.Text);
-                ocrResultForm.Show();
+                // 結果を表示または自動クリップボード
+                if (showResult)
+                {
+                    var ocrResultForm = new OcrResultForm(result.Text);
+                    ocrResultForm.Show();
+                }
+                else
+                {
+                    // 自動OCRの場合はクリップボードに送信
+                    if (!string.IsNullOrEmpty(result.Text))
+                    {
+                        Clipboard.SetText(result.Text);
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -190,6 +217,79 @@ namespace WinFormsApp1
                 this.Cursor = Cursors.Default;
                 ocrMenuItem.Enabled = true;
             }
+        }
+
+        private Bitmap PreprocessImageForOcr(Bitmap original)
+        {
+            // 小さい画像の場合は拡大してOCR精度を向上
+            int minSize = 300;
+            int targetWidth = original.Width;
+            int targetHeight = original.Height;
+
+            // 画像が小さすぎる場合は拡大
+            if (original.Width < minSize || original.Height < minSize)
+            {
+                float scale = Math.Max((float)minSize / original.Width, (float)minSize / original.Height);
+                // さらに2倍にして精度向上
+                scale *= 2;
+                targetWidth = (int)(original.Width * scale);
+                targetHeight = (int)(original.Height * scale);
+            }
+            else
+            {
+                // 通常サイズでも少し拡大
+                targetWidth = (int)(original.Width * 1.5);
+                targetHeight = (int)(original.Height * 1.5);
+            }
+
+            var enlarged = new Bitmap(targetWidth, targetHeight);
+            using (Graphics g = Graphics.FromImage(enlarged))
+            {
+                // 高品質な拡大設定
+                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
+                g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighQuality;
+                g.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighQuality;
+
+                g.DrawImage(original, 0, 0, targetWidth, targetHeight);
+            }
+
+            // コントラストとシャープネスを強調
+            var enhanced = EnhanceContrast(enlarged);
+            enlarged.Dispose();
+
+            return enhanced;
+        }
+
+        private Bitmap EnhanceContrast(Bitmap original)
+        {
+            var result = new Bitmap(original.Width, original.Height);
+
+            using (Graphics g = Graphics.FromImage(result))
+            {
+                // コントラストを調整するカラーマトリックス
+                var colorMatrix = new System.Drawing.Imaging.ColorMatrix(new float[][]
+                {
+                    new float[] {1.2f, 0, 0, 0, 0},      // Red
+                    new float[] {0, 1.2f, 0, 0, 0},      // Green
+                    new float[] {0, 0, 1.2f, 0, 0},      // Blue
+                    new float[] {0, 0, 0, 1, 0},         // Alpha
+                    new float[] {-0.1f, -0.1f, -0.1f, 0, 1}  // Brightness adjustment
+                });
+
+                using (var attributes = new System.Drawing.Imaging.ImageAttributes())
+                {
+                    attributes.SetColorMatrix(colorMatrix);
+
+                    g.DrawImage(original,
+                        new Rectangle(0, 0, original.Width, original.Height),
+                        0, 0, original.Width, original.Height,
+                        GraphicsUnit.Pixel,
+                        attributes);
+                }
+            }
+
+            return result;
         }
 
         private void ImageViewerForm_KeyDown(object? sender, KeyEventArgs e)
@@ -204,7 +304,7 @@ namespace WinFormsApp1
             }
             else if (e.Control && e.KeyCode == Keys.T)
             {
-                OcrMenuItem_Click(null, EventArgs.Empty);
+                _ = PerformOcrAsync(showResult: true);
             }
             else if (e.KeyCode == Keys.Escape)
             {

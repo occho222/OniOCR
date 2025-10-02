@@ -5,6 +5,24 @@ namespace WinFormsApp1
         public Form1()
         {
             InitializeComponent();
+            LoadSettings();
+        }
+
+        private void LoadSettings()
+        {
+            chkAutoOcr.Checked = Properties.Settings.Default.AutoOcr;
+        }
+
+        private void SaveSettings()
+        {
+            Properties.Settings.Default.AutoOcr = chkAutoOcr.Checked;
+            Properties.Settings.Default.Save();
+        }
+
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            SaveSettings();
+            base.OnFormClosing(e);
         }
 
         private void btnCapture_Click(object sender, EventArgs e)
@@ -18,7 +36,7 @@ namespace WinFormsApp1
                 {
                     if (captureForm.CapturedImage != null)
                     {
-                        var viewerForm = new ImageViewerForm(captureForm.CapturedImage);
+                        var viewerForm = new ImageViewerForm(captureForm.CapturedImage, chkAutoOcr.Checked);
                         viewerForm.Show();
                     }
                 }

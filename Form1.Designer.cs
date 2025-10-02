@@ -29,6 +29,7 @@
         private void InitializeComponent()
         {
             btnCapture = new Button();
+            chkAutoOcr = new CheckBox();
             SuspendLayout();
             //
             // btnCapture
@@ -41,11 +42,24 @@
             btnCapture.UseVisualStyleBackColor = true;
             btnCapture.Click += btnCapture_Click;
             //
+            // chkAutoOcr
+            //
+            chkAutoOcr.AutoSize = true;
+            chkAutoOcr.Checked = true;
+            chkAutoOcr.CheckState = CheckState.Checked;
+            chkAutoOcr.Location = new Point(12, 70);
+            chkAutoOcr.Name = "chkAutoOcr";
+            chkAutoOcr.Size = new Size(120, 19);
+            chkAutoOcr.TabIndex = 1;
+            chkAutoOcr.Text = "自動でOCR実行";
+            chkAutoOcr.UseVisualStyleBackColor = true;
+            //
             // Form1
             //
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(180, 80);
+            ClientSize = new Size(180, 100);
+            Controls.Add(chkAutoOcr);
             Controls.Add(btnCapture);
             FormBorderStyle = FormBorderStyle.FixedSingle;
             MaximizeBox = false;
@@ -54,9 +68,11 @@
             Text = "OniOCR";
             TopMost = true;
             ResumeLayout(false);
+            PerformLayout();
         }
 
         private Button btnCapture;
+        private CheckBox chkAutoOcr;
 
         #endregion
     }
